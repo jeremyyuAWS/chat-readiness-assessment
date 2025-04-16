@@ -61,6 +61,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
   const [useTypewriter] = useState(true);
   const [currentTypewriterMessage, setCurrentTypewriterMessage] = useState<Message | null>(null);
   const [demoMode, setDemoMode] = useState<DemoModeState>({ isAuto: true, isActive: true });
+  const [isUserTyping, setIsUserTyping] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addInteraction, startSession, endSession } = useTracking();
@@ -147,35 +148,48 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     setDemoMode(prev => ({ ...prev, isAuto: !prev.isAuto }));
   };
 
-  // Update handleDemoResponse to respect manual mode
+  // Add helper function to find matching demo response
+  const findMatchingDemoResponse = (input: string, step: number): string | null => {
+    const currentMessage = agentMessages[step - 1];
+    if (!currentMessage || !currentMessage.choices) return null;
+
+    const normalizedInput = input.toLowerCase().trim();
+    const matchingChoice = currentMessage.choices.find(choice => 
+      choice.toLowerCase().includes(normalizedInput) || 
+      normalizedInput.includes(choice.toLowerCase())
+    );
+
+    return matchingChoice || null;
+  };
+
+  // Update handleDemoResponse to handle custom input
   const handleDemoResponse = (answer: string, step: number) => {
-    // Add user message
+    // Find matching demo response or use custom input
+    const matchingResponse = findMatchingDemoResponse(answer, step);
+    const finalAnswer = matchingResponse || answer;
+    
+    // Add user message with typing animation
     const userMessage: Message = {
       id: Date.now(),
-      content: answer,
+      content: finalAnswer,
       sender: 'user',
       timestamp: new Date(),
       responseType: 'text'
     };
-    setMessages(prev => [...prev, userMessage]);
     
-    // Add a small delay before showing typing indicator
-    setTimeout(() => {
-      setIsTyping(true);
-    }, 300);
-
-    // Track user message
-    addInteraction('question_answered' as InteractionType, {
-      message: answer,
-      step: step
-    });
-
-    // Get agent response
-    const response = agentRespond(answer, step, userProfile, demoMode.isActive);
-    
-    const typingDelay = calculateTypingDelay(response.content, true);
+    // Calculate typing delay for user message
+    const userTypingDelay = calculateTypingDelay(finalAnswer, false);
+    setIsUserTyping(true);
     
     setTimeout(() => {
+      setMessages(prev => [...prev, userMessage]);
+      if (useTypewriter) {
+        setCurrentTypewriterMessage(userMessage);
+      }
+      setIsUserTyping(false);
+      
+      // Get agent response immediately after user message
+      const response = agentRespond(finalAnswer, step, userProfile, demoMode.isActive);
       const agentMessage: Message = {
         id: Date.now(),
         content: response.content,
@@ -186,18 +200,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       };
       
       setMessages(prev => [...prev, agentMessage]);
-      if (useTypewriter) {
-        setCurrentTypewriterMessage(agentMessage);
-      }
-      setIsTyping(false);
       
       if (response.final) {
         setShowRecommendations(true);
       } else {
         setConversationStep(prev => prev + 1);
         
-        // Only auto-proceed if in auto demo mode
-        if (demoMode.isAuto && demoMode.isActive && DEMO_MODE_RESPONSES[step + 1]) {
+        // Only auto-proceed if in auto demo mode and using pre-written responses
+        if (demoMode.isAuto && demoMode.isActive && DEMO_MODE_RESPONSES[step + 1] && matchingResponse) {
           const nextResponse = DEMO_MODE_RESPONSES[step + 1];
           setTimeout(() => {
             handleDemoResponse(nextResponse.answer, step + 1);
@@ -216,27 +226,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       if (response.recommendations) {
         setRecommendations(response.recommendations);
       }
-    }, typingDelay);
+    }, userTypingDelay);
   };
 
-  // Add manual demo response handler
+  // Update handleManualDemoStep to handle custom input
   const handleManualDemoStep = () => {
-    if (!demoMode.isActive || isTyping) return;
+    if (!demoMode.isActive || isTyping || isUserTyping) return;
     const nextStep = conversationStep;
     if (DEMO_MODE_RESPONSES[nextStep]) {
       handleDemoResponse(DEMO_MODE_RESPONSES[nextStep].answer, nextStep);
     }
   };
 
+  // Update handleSendMessage to handle custom input
   const handleSendMessage = () => {
-    if (!input.trim() || isTyping) return;
+    if (!input.trim() || isTyping || isUserTyping) return;
 
     if (demoMode.isActive) {
-      // In demo mode, ignore manual input and use pre-written responses
+      // In demo mode, handle custom input
+      handleDemoResponse(input, conversationStep);
       return;
     }
 
-    // Regular message handling for non-demo mode
     const userMessage: Message = {
       id: Date.now(),
       content: input,
@@ -244,22 +255,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       timestamp: new Date(),
       responseType: 'text'
     };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
     
-    // Add a small delay before showing typing indicator
+    // Calculate typing delay for user message
+    const userTypingDelay = calculateTypingDelay(input, false);
+    setIsUserTyping(true);
+    
     setTimeout(() => {
-      setIsTyping(true);
-    }, 300); // Reduced from 500ms
-
-    // Get agent response
-    const response = agentRespond(input, conversationStep, userProfile);
-    
-    // Calculate typing delay based on message length - faster for agent
-    const typingDelay = calculateTypingDelay(response.content, true);
-    
-    // Show typing indicator for a realistic duration
-    setTimeout(() => {
+      setMessages(prev => [...prev, userMessage]);
+      if (useTypewriter) {
+        setCurrentTypewriterMessage(userMessage);
+      }
+      setIsUserTyping(false);
+      setInput('');
+      
+      // Get agent response immediately after user message
+      const response = agentRespond(input, conversationStep, userProfile);
       const agentMessage: Message = {
         id: Date.now(),
         content: response.content,
@@ -270,19 +280,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       };
       
       setMessages(prev => [...prev, agentMessage]);
-      if (useTypewriter) {
-        setCurrentTypewriterMessage(agentMessage);
-      }
-      setIsTyping(false);
       
-      // Update conversation state
       if (response.final) {
         setShowRecommendations(true);
       } else {
         setConversationStep(prev => prev + 1);
       }
       
-      // Update user profile if response contains a tag
       if (response.tag && response.value) {
         const tag = response.tag as string;
         setUserProfile(prev => ({
@@ -291,11 +295,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         }));
       }
       
-      // Store recommendations if provided
       if (response.recommendations) {
         setRecommendations(response.recommendations);
       }
-    }, typingDelay);
+    }, userTypingDelay);
   };
 
   const handleChoiceSelect = (choice: string) => {
@@ -446,17 +449,23 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder={demoMode.isActive && !demoMode.isAuto ? "Click 'Next' to proceed with demo" : "Type your message..."}
+                placeholder={
+                  demoMode.isActive && !demoMode.isAuto 
+                    ? "Click 'Next' to proceed with demo" 
+                    : messages[messages.length - 1]?.choices 
+                      ? "Type your response or select from options above"
+                      : "Type your message..."
+                }
                 className="flex-1 border border-gray-300 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none max-h-20"
                 rows={1}
-                disabled={isTyping || (messages[messages.length - 1]?.responseType === 'multiChoice') || demoMode.isActive}
+                disabled={isTyping || isUserTyping || (messages[messages.length - 1]?.responseType === 'multiChoice') || demoMode.isActive}
               />
               {demoMode.isActive && !demoMode.isAuto ? (
                 <button
                   onClick={handleManualDemoStep}
-                  disabled={isTyping}
+                  disabled={isTyping || isUserTyping}
                   className={`bg-indigo-600 px-6 py-3 rounded-r-lg ${
-                    isTyping ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'
+                    isTyping || isUserTyping ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'
                   }`}
                 >
                   Next
@@ -464,9 +473,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
               ) : (
                 <button
                   onClick={handleSendMessage}
-                  disabled={isTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')}
+                  disabled={isTyping || isUserTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')}
                   className={`bg-indigo-600 p-3 rounded-r-lg ${
-                    isTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')
+                    isTyping || isUserTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')
                       ? 'opacity-50 cursor-not-allowed'
                       : 'hover:bg-indigo-700'
                   }`}
@@ -476,8 +485,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
               )}
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              {demoMode.isActive && !demoMode.isAuto ? (
+              {isUserTyping ? (
+                "User is typing..."
+              ) : demoMode.isActive && !demoMode.isAuto ? (
                 "Manual demo mode - Click 'Next' to proceed through the demo"
+              ) : messages[messages.length - 1]?.choices ? (
+                "You can type a custom response or select from the options above"
               ) : conversationStep === 1 ? (
                 "This is a demo of Lyzr's AI agent capabilities. AI recommendations are for demonstration purposes."
               ) : conversationStep >= 4 ? (
