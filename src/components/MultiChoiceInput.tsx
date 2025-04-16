@@ -18,7 +18,6 @@ const MultiChoiceInput: React.FC<MultiChoiceInputProps> = ({
     <div className={`grid grid-cols-1 gap-2 ${isEmbedded ? 'mt-3' : 'mt-2'}`}>
       {choices.map((choice, index) => {
         const isFirst = index === 0;
-        const isLast = index === choices.length - 1;
         
         // Extract any key terms or focus from the choice text
         const parts = choice.split(' - ');

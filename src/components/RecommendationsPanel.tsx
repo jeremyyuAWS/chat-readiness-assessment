@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, ArrowRight, Download, Calendar, ExternalLink, Mail, Loader2 } from 'lucide-react';
+import { CheckCircle, ArrowRight, Download, Calendar, ExternalLink, Mail, Loader2, X } from 'lucide-react';
 import { Recommendation } from '../utils/agentSimulator';
 import { useTracking } from '../context/TrackingContext';
 
@@ -151,113 +151,95 @@ const RecommendationsPanel: React.FC<RecommendationsPanelProps> = ({ recommendat
   };
   
   return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="mb-8 text-center">
-        <div className="bg-indigo-100 text-indigo-600 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-3">
-          <CheckCircle className="h-8 w-8" />
-        </div>
-        <h2 className="text-2xl font-bold text-indigo-900 mb-2">Your AI Readiness Plan</h2>
-        <p className="text-gray-600 max-w-md mx-auto">
-          Based on your responses, we've created a personalized AI strategy plan to help you succeed in your journey.
-        </p>
-      </div>
-
-      {/* Email Capture Form */}
-      {renderEmailCaptureForm()}
-
-      <div className="grid gap-6">
-        {/* Maturity Level */}
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-5 rounded-xl text-white">
-          <h3 className="text-lg font-semibold mb-2">Your AI Maturity Level</h3>
-          <div className="flex items-center justify-between mb-2">
-            <span>Beginner</span>
-            <span>Advanced</span>
-          </div>
-          <div className="h-2 bg-white/30 rounded-full mb-2">
-            <div 
-              className="h-full bg-white rounded-full"
-              style={{ width: `${recommendations[0]?.maturityScore || 30}%` }}
-            ></div>
-          </div>
-          <p className="text-sm opacity-90">
-            {recommendations[0]?.maturityInsight || "You're in the early stages of your AI journey with significant growth opportunities ahead."}
-          </p>
-        </div>
-
-        {/* Recommended Use Cases */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold mb-3 text-indigo-900">Recommended Use Cases</h3>
-          <div className="space-y-3">
-            {recommendations[0]?.useCases?.map((useCase, index) => (
-              <div key={index} className="border border-gray-100 p-3 rounded-lg hover:border-indigo-200 transition-colors">
-                <h4 className="font-medium text-indigo-800">{useCase.title}</h4>
-                <p className="text-sm text-gray-600 mt-1">{useCase.description}</p>
-                <a 
-                  href={useCase.link} 
-                  className="text-indigo-600 text-sm font-medium mt-2 flex items-center hover:text-indigo-700"
-                  onClick={() => handleCTAClick('use_case_link')}
-                >
-                  Learn more <ExternalLink className="h-3.5 w-3.5 ml-1" />
-                </a>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white w-full max-w-2xl h-[80vh] rounded-lg shadow-xl flex flex-col relative">
+        {/* Header */}
+        <div className="p-4 border-b flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="bg-indigo-600 rounded-full p-1.5 mr-2">
+              <div className="bg-white rounded-full w-6 h-6 flex items-center justify-center">
+                <span className="text-indigo-600 font-bold">L</span>
               </div>
-            ))}
+            </div>
+            <h2 className="text-lg font-semibold">Your AI Readiness Assessment</h2>
           </div>
-        </div>
-
-        {/* Resources */}
-        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold mb-3 text-indigo-900">Resources for You</h3>
-          <div className="space-y-3">
-            {recommendations[0]?.resources?.map((resource, index) => (
-              <div key={index} className="border border-gray-100 p-3 rounded-lg flex items-start hover:border-indigo-200 transition-colors">
-                <div className="bg-indigo-100 rounded-lg p-2 mr-3">
-                  {resource.type === 'tutorial' ? (
-                    <Download className="h-5 w-5 text-indigo-600" />
-                  ) : (
-                    <ExternalLink className="h-5 w-5 text-indigo-600" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-indigo-800">{resource.title}</h4>
-                  <p className="text-sm text-gray-600 mt-1">{resource.description}</p>
-                  <a 
-                    href={resource.link} 
-                    className="text-indigo-600 text-sm font-medium mt-2 flex items-center hover:text-indigo-700"
-                    onClick={() => handleCTAClick('resource_link')}
-                  >
-                    {resource.type === 'tutorial' ? 'Download' : 'View'} <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Next Steps */}
-        <div className="bg-indigo-50 p-5 rounded-xl">
-          <h3 className="text-lg font-semibold mb-3 text-indigo-900">Next Steps</h3>
-          <ul className="space-y-2">
-            {recommendations[0]?.nextSteps?.map((step, index) => (
-              <li key={index} className="flex items-start">
-                <CheckCircle className="h-5 w-5 text-indigo-600 mr-2 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">{step}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* CTA Button */}
-        <div className="text-center mt-2">
           <button 
-            className="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center mx-auto"
-            onClick={() => handleCTAClick('schedule_call')}
+            onClick={() => {}}
+            className="text-gray-500 hover:text-gray-700"
           >
-            <Calendar className="h-5 w-5 mr-2" />
-            Talk to an AI Expert
+            <X className="h-5 w-5" />
           </button>
-          <p className="text-sm text-gray-500 mt-3">
-            Schedule a 30-minute consultation to discuss your AI strategy
-          </p>
+        </div>
+        
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {/* Email capture form */}
+          {renderEmailCaptureForm()}
+          
+          {/* Recommendations */}
+          <div className="space-y-6">
+            {recommendations.map((recommendation, index) => (
+              <div key={index} className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="text-xl font-semibold mb-4">
+                  {recommendation.maturityInsight}
+                </h3>
+                
+                {/* Use cases */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-medium mb-3">Recommended Use Cases</h4>
+                  <div className="grid gap-4">
+                    {recommendation.useCases.map((useCase, i) => (
+                      <a
+                        key={i}
+                        href={useCase.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                      >
+                        <div>
+                          <h5 className="font-medium text-gray-900">{useCase.title}</h5>
+                          <p className="text-sm text-gray-600">{useCase.description}</p>
+                        </div>
+                        <ExternalLink className="h-5 w-5 text-gray-400" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Resources */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-medium mb-3">Helpful Resources</h4>
+                  <div className="grid gap-4">
+                    {recommendation.resources.map((resource, i) => (
+                      <a
+                        key={i}
+                        href={resource.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                      >
+                        <div>
+                          <h5 className="font-medium text-gray-900">{resource.title}</h5>
+                          <p className="text-sm text-gray-600">{resource.description}</p>
+                        </div>
+                        <ExternalLink className="h-5 w-5 text-gray-400" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Next steps */}
+                <div>
+                  <h4 className="text-lg font-medium mb-3">Next Steps</h4>
+                  <ul className="list-disc list-inside space-y-2 text-gray-700">
+                    {recommendation.nextSteps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

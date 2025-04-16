@@ -1,20 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { MessageType } from './ChatInterface';
+import React from 'react';
 import MultiChoiceInput from './MultiChoiceInput';
-import { ThumbsUp, ThumbsDown, HelpCircle, Lightbulb, Clipboard, Copy, Check, Info } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, HelpCircle, Lightbulb, Copy, Check, Info } from 'lucide-react';
+
+interface Message {
+  id: number;
+  content: string;
+  sender: 'user' | 'agent';
+  timestamp: Date;
+  choices?: string[];
+  responseType?: 'text' | 'multiChoice';
+}
 
 interface ChatMessageProps {
-  message: MessageType;
+  message: Message;
   onChoiceSelect: (choice: string) => void;
   onReaction?: (reaction: 'helpful' | 'not-helpful') => void;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onChoiceSelect, onReaction }) => {
   const isAgent = message.sender === 'agent';
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [showReactions, setShowReactions] = useState(false);
-  const [reacted, setReacted] = useState<'helpful' | 'not-helpful' | null>(null);
+  const [showTooltip, setShowTooltip] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+  const [showReactions, setShowReactions] = React.useState(false);
+  const [reacted, setReacted] = React.useState<'helpful' | 'not-helpful' | null>(null);
 
   // Extract any potential stats from the message
   const containsStats = isAgent && (
@@ -39,7 +47,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onChoiceSelect, onRe
   );
 
   // Show reactions for longer, more substantive agent messages
-  useEffect(() => {
+  React.useEffect(() => {
     if (isAgent && message.content.length > 80 && !message.responseType) {
       const timer = setTimeout(() => {
         setShowReactions(true);
@@ -102,56 +110,55 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onChoiceSelect, onRe
           </div>
         )}
         
-        <p className={`whitespace-pre-wrap ${isAgent && message.responseType === 'multiChoice' ? 'font-medium' : ''}`}>
-          {message.content}
-        </p>
+        <div className="relative">
+          <p className={`${isAgent ? 'text-gray-800' : 'text-white'} whitespace-pre-wrap`}>
+            {message.content}
+          </p>
+          
+          {/* Copy button */}
+          {isAgent && (
+            <button
+              onClick={handleCopyContent}
+              className="absolute top-0 right-0 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              {copied ? (
+                <Check className="h-4 w-4 text-green-500" />
+              ) : (
+                <Copy className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              )}
+            </button>
+          )}
+        </div>
         
-        {isAgent && message.responseType === 'multiChoice' && message.choices && (
+        {/* Multi-choice options */}
+        {message.choices && (
           <div className="mt-3">
-            <MultiChoiceInput 
-              choices={message.choices} 
-              onSelect={onChoiceSelect} 
+            <MultiChoiceInput
+              choices={message.choices}
+              onSelect={onChoiceSelect}
+              disabled={false}
               isEmbedded={true}
             />
           </div>
         )}
         
-        {/* Copy button (only for agent messages with useful content) */}
-        {isAgent && message.content.length > 50 && !message.responseType && (
-          <button 
-            onClick={handleCopyContent}
-            className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-            title="Copy content"
-          >
-            {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-          </button>
-        )}
-        
         {/* Reaction buttons */}
-        {showReactions && isAgent && !message.responseType && (
-          <div className="flex items-center mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500">
-            {!reacted ? (
-              <>
-                <span className="mr-2">Was this helpful?</span>
-                <button 
-                  onClick={() => handleReaction('helpful')}
-                  className="p-1 rounded-md hover:bg-gray-100 mr-1"
-                >
-                  <ThumbsUp className="h-3.5 w-3.5" />
-                </button>
-                <button 
-                  onClick={() => handleReaction('not-helpful')}
-                  className="p-1 rounded-md hover:bg-gray-100"
-                >
-                  <ThumbsDown className="h-3.5 w-3.5" />
-                </button>
-              </>
-            ) : (
-              <span className="text-green-600 flex items-center">
-                <Check className="h-3.5 w-3.5 mr-1" />
-                Thanks for your feedback!
-              </span>
-            )}
+        {showReactions && !reacted && (
+          <div className="absolute -bottom-8 left-0 flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => handleReaction('helpful')}
+              className="p-1 rounded-full hover:bg-gray-100"
+              title="This was helpful"
+            >
+              <ThumbsUp className="h-4 w-4 text-gray-400 hover:text-green-500" />
+            </button>
+            <button
+              onClick={() => handleReaction('not-helpful')}
+              className="p-1 rounded-full hover:bg-gray-100"
+              title="This was not helpful"
+            >
+              <ThumbsDown className="h-4 w-4 text-gray-400 hover:text-red-500" />
+            </button>
           </div>
         )}
       </div>
@@ -165,7 +172,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onChoiceSelect, onRe
       )}
       
       {/* Help tooltip that shows on hover for the first couple of messages */}
-      {isAgent && message.id === '1' && (
+      {isAgent && message.id === 1 && (
         <div 
           className="absolute -top-10 left-16 bg-indigo-50 text-indigo-800 p-2 rounded-lg text-xs shadow-md border border-indigo-100 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
           onMouseEnter={() => setShowTooltip(true)}
