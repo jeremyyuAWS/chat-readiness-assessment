@@ -56,27 +56,27 @@ export interface DemoResponse {
 export const DEMO_MODE_RESPONSES: Record<number, DemoResponse> = {
   1: {
     answer: "Yes, I'd love to learn more about AI implementation!",
-    delay: 1500
+    delay: 3000
   },
   2: {
     answer: "Just Starting - New to AI implementation",
-    delay: 2000
+    delay: 4000
   },
   3: {
     answer: "CTO/Technical Leader - Technology focus",
-    delay: 2500
+    delay: 3500
   },
   4: {
     answer: "Data Analysis - Business insights",
-    delay: 2000
+    delay: 4000
   },
   5: {
     answer: "Strategic Planning - Roadmap development",
-    delay: 2500
+    delay: 3500
   },
   6: {
     answer: "Technology - Software or hardware",
-    delay: 2000
+    delay: 4000
   }
 };
 

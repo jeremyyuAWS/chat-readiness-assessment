@@ -28,6 +28,19 @@ interface ChatMessageProps {
   children?: React.ReactNode;
 }
 
+// Add helper function for calculating typing time
+const calculateTypingDelay = (text: string) => {
+  // Average typing speed (characters per minute)
+  const typingSpeed = 300;
+  // Minimum delay in milliseconds
+  const minDelay = 1000;
+  // Calculate delay based on message length (convert speed to ms)
+  const delay = Math.max(minDelay, (text.length / typingSpeed) * 60 * 1000);
+  // Add some randomness (±20%)
+  const variance = delay * 0.2;
+  return delay + (Math.random() * variance * 2 - variance);
+};
+
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -81,7 +94,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
           handleDemoResponse(demoResponse.answer, 1);
         }, demoResponse.delay);
       }
-    }, 1000);
+    }, 2000); // Increased initial delay
     
     return () => clearTimeout(timer);
   }, []);
@@ -134,7 +147,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       timestamp: new Date()
     };
     setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
+    
+    // Add a small delay before showing typing indicator
+    setTimeout(() => {
+      setIsTyping(true);
+    }, 500);
 
     // Track user message
     addInteraction('question_answered' as InteractionType, {
@@ -143,9 +160,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     });
 
     // Get agent response
+    const response = agentRespond(answer, step, userProfile, isDemoMode);
+    
+    // Calculate typing delay based on message length
+    const typingDelay = calculateTypingDelay(response.content);
+    
+    // Show typing indicator for a realistic duration
     setTimeout(() => {
-      const response = agentRespond(answer, step, userProfile, isDemoMode);
-      
       const agentMessage: Message = {
         id: Date.now(),
         content: response.content,
@@ -167,12 +188,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       } else {
         setConversationStep(prev => prev + 1);
         
-        // Continue demo mode responses
+        // Continue demo mode responses with additional delay
         if (isDemoMode && DEMO_MODE_RESPONSES[step + 1]) {
           const nextResponse = DEMO_MODE_RESPONSES[step + 1];
           setTimeout(() => {
             handleDemoResponse(nextResponse.answer, step + 1);
-          }, nextResponse.delay);
+          }, nextResponse.delay + 1000); // Added extra delay between messages
         }
       }
       
@@ -189,7 +210,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       if (response.recommendations) {
         setRecommendations(response.recommendations);
       }
-    }, 1000);
+    }, typingDelay);
   };
 
   const handleSendMessage = () => {
@@ -210,12 +231,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setIsTyping(true);
+    
+    // Add a small delay before showing typing indicator
+    setTimeout(() => {
+      setIsTyping(true);
+    }, 500);
 
     // Get agent response
+    const response = agentRespond(input, conversationStep, userProfile);
+    
+    // Calculate typing delay based on message length
+    const typingDelay = calculateTypingDelay(response.content);
+    
+    // Show typing indicator for a realistic duration
     setTimeout(() => {
-      const response = agentRespond(input, conversationStep, userProfile);
-      
       const agentMessage: Message = {
         id: Date.now(),
         content: response.content,
@@ -251,7 +280,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       if (response.recommendations) {
         setRecommendations(response.recommendations);
       }
-    }, 1000);
+    }, typingDelay);
   };
 
   const handleChoiceSelect = (choice: string) => {
