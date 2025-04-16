@@ -59,23 +59,23 @@ export const DEMO_MODE_RESPONSES: Record<number, DemoResponse> = {
     delay: 3000
   },
   2: {
-    answer: "Just Starting - New to AI implementation",
+    answer: "🌱 Just Starting - Looking to understand AI's potential",
     delay: 4000
   },
   3: {
-    answer: "CTO/Technical Leader - Technology focus",
+    answer: "💻 CTO/Technical Leader - Building the future",
     delay: 3500
   },
   4: {
-    answer: "Data Analysis - Business insights",
+    answer: "📊 Data Analysis - Actionable business insights",
     delay: 4000
   },
   5: {
-    answer: "Strategic Planning - Roadmap development",
+    answer: "🗺️ Strategic Roadmap - Implementation plan",
     delay: 3500
   },
   6: {
-    answer: "Technology - Software or hardware",
+    answer: "💻 Technology - Software/Hardware",
     delay: 4000
   }
 };
@@ -83,64 +83,64 @@ export const DEMO_MODE_RESPONSES: Record<number, DemoResponse> = {
 // Pre-defined agent messages
 export const agentMessages: AgentMessage[] = [
   {
-    content: "Hi there 👋 Ready to explore how AI fits into your journey?",
+    content: "Hi there 👋 I'm excited to help you explore AI opportunities for your business. To make this valuable for you, I'll ask a few quick questions to understand your unique situation. Ready to begin?",
     responseType: 'text'
   },
   {
-    content: "Great! What best describes your current AI journey?",
+    content: "Great! First, I'd love to understand where you are in your AI journey. This helps me tailor recommendations specifically to your experience level:",
     responseType: 'multiChoice',
     choices: [
-      "Just Starting - New to AI implementation",
-      "Exploring - Researching potential applications",
-      "Piloting - Testing specific use cases",
-      "Scaling - Expanding existing AI solutions"
+      "🌱 Just Starting - Looking to understand AI's potential",
+      "🔍 Exploring - Have ideas but need validation",
+      "🚀 Piloting - Running first AI projects",
+      "📈 Scaling - Expanding successful AI initiatives"
     ]
   },
   {
-    content: "Thanks for sharing! What's your role?",
+    content: "Thanks for sharing that! Your experience level will help me focus on relevant solutions. What's your role? This helps me understand your perspective:",
     responseType: 'multiChoice',
     choices: [
-      "Founder/CEO - Business leadership",
-      "CTO/Technical Leader - Technology focus",
-      "Marketing/Growth - Customer acquisition",
-      "HR/People Operations - Team management",
-      "Operations/Finance - Business processes",
-      "Other Business Function"
+      "👔 Founder/CEO - Driving business strategy",
+      "💻 CTO/Technical Leader - Building the future",
+      "📢 Marketing/Growth - Growing the business",
+      "👥 HR/People Ops - Empowering teams",
+      "⚙️ Operations/Finance - Optimizing processes",
+      "🎯 Other - Exploring opportunities"
     ]
   },
   {
-    content: "What area are you most excited to use AI in?",
+    content: "Perfect! Now I can focus on your domain. Which area of AI innovation interests you most?",
     responseType: 'multiChoice',
     choices: [
-      "Customer Support - Automate responses",
-      "Marketing - Content and campaigns",
-      "Data Analysis - Business insights",
-      "Product Development - Smart features",
-      "Knowledge Management - Internal systems",
-      "Not Sure Yet - Exploring options"
+      "🤝 Customer Support - Smart automation & assistance",
+      "📱 Marketing - AI-powered growth & engagement",
+      "📊 Data Analysis - Actionable business insights",
+      "⚡ Product Development - AI-enhanced features",
+      "📚 Knowledge Management - Smart documentation",
+      "🎯 Not Sure Yet - Need guidance"
     ]
   },
   {
-    content: "What kind of help do you need most right now?",
+    content: "Got it! To make my recommendations actionable, what type of support would be most valuable right now?",
     responseType: 'multiChoice',
     choices: [
-      "Tutorials & Learning - Educational resources",
-      "Use Cases - Real-world examples",
-      "Strategic Planning - Roadmap development",
-      "Technical Guidance - Implementation help",
-      "Business Case - ROI calculation"
+      "📚 Learning Resources - Curated for your needs",
+      "💡 Use Cases - Success stories in your space",
+      "🗺️ Strategic Roadmap - Implementation plan",
+      "🛠️ Technical Guide - Hands-on assistance",
+      "📊 ROI Analysis - Business case building"
     ]
   },
   {
-    content: "What industry is your business in?",
+    content: "Last question! Which industry are you in? This helps me share relevant examples and benchmarks:",
     responseType: 'multiChoice',
     choices: [
-      "Technology - Software or hardware",
-      "Financial Services - Banking, insurance, etc.",
-      "Healthcare - Medical services or products",
-      "Retail & E-commerce - Consumer goods",
-      "Manufacturing - Industrial production",
-      "Other"
+      "💻 Technology - Software/Hardware",
+      "💰 Financial Services - Banking/Insurance",
+      "🏥 Healthcare - Medical/Health",
+      "🛍️ Retail/E-commerce - Consumer",
+      "🏭 Manufacturing - Industrial",
+      "🎯 Other - Different space"
     ]
   }
 ];

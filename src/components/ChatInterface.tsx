@@ -29,15 +29,15 @@ interface ChatMessageProps {
 }
 
 // Add helper function for calculating typing time
-const calculateTypingDelay = (text: string) => {
-  // Average typing speed (characters per minute)
-  const typingSpeed = 300;
-  // Minimum delay in milliseconds
-  const minDelay = 1000;
+const calculateTypingDelay = (text: string, isAgent: boolean) => {
+  // Different typing speeds for agent vs user (characters per minute)
+  const typingSpeed = isAgent ? 800 : 300;
+  // Different minimum delays for agent vs user
+  const minDelay = isAgent ? 500 : 1000;
   // Calculate delay based on message length (convert speed to ms)
   const delay = Math.max(minDelay, (text.length / typingSpeed) * 60 * 1000);
-  // Add some randomness (±20%)
-  const variance = delay * 0.2;
+  // Add some randomness (±20% for users, ±10% for agent)
+  const variance = delay * (isAgent ? 0.1 : 0.2);
   return delay + (Math.random() * variance * 2 - variance);
 };
 
@@ -151,7 +151,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     // Add a small delay before showing typing indicator
     setTimeout(() => {
       setIsTyping(true);
-    }, 500);
+    }, 300); // Reduced from 500ms
 
     // Track user message
     addInteraction('question_answered' as InteractionType, {
@@ -162,8 +162,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     // Get agent response
     const response = agentRespond(answer, step, userProfile, isDemoMode);
     
-    // Calculate typing delay based on message length
-    const typingDelay = calculateTypingDelay(response.content);
+    // Calculate typing delay based on message length - faster for agent
+    const typingDelay = calculateTypingDelay(response.content, true);
     
     // Show typing indicator for a realistic duration
     setTimeout(() => {
@@ -188,12 +188,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       } else {
         setConversationStep(prev => prev + 1);
         
-        // Continue demo mode responses with additional delay
+        // Continue demo mode responses with shorter delay
         if (isDemoMode && DEMO_MODE_RESPONSES[step + 1]) {
           const nextResponse = DEMO_MODE_RESPONSES[step + 1];
           setTimeout(() => {
             handleDemoResponse(nextResponse.answer, step + 1);
-          }, nextResponse.delay + 1000); // Added extra delay between messages
+          }, nextResponse.delay + 500); // Reduced from 1000ms
         }
       }
       
@@ -235,13 +235,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     // Add a small delay before showing typing indicator
     setTimeout(() => {
       setIsTyping(true);
-    }, 500);
+    }, 300); // Reduced from 500ms
 
     // Get agent response
     const response = agentRespond(input, conversationStep, userProfile);
     
-    // Calculate typing delay based on message length
-    const typingDelay = calculateTypingDelay(response.content);
+    // Calculate typing delay based on message length - faster for agent
+    const typingDelay = calculateTypingDelay(response.content, true);
     
     // Show typing indicator for a realistic duration
     setTimeout(() => {
