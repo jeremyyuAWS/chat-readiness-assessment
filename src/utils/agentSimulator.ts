@@ -41,16 +41,10 @@ export interface IndustryInsight {
 }
 
 export interface Recommendation {
-  maturityScore: number;
-  maturityInsight: string;
-  useCases: UseCase[];
-  resources: Resource[];
-  nextSteps: string[];
-  industryInsights?: IndustryInsight[];
-  competitorAnalysis?: CompetitorAnalysis[];
-  estimatedTimeToValue?: string;
-  estimatedCost?: string;
-  implementationDifficulty?: 'Low' | 'Medium' | 'High';
+  title: string;
+  description: string;
+  type: 'learning' | 'technical' | 'business' | 'tools' | 'strategy' | 'industry';
+  priority: 'high' | 'medium' | 'low';
 }
 
 // Pre-defined agent messages
@@ -308,241 +302,31 @@ const costEstimates: Record<string, Record<string, string>> = {
   }
 };
 
-// Mock recommendations based on user profile
+// Pre-defined mock recommendations
 const mockRecommendations: Record<string, Recommendation> = {
-  // For Founder + Just Starting + Customer Support
-  'founder-starting-support': {
-    maturityScore: 20,
-    maturityInsight: "You're at the beginning of your AI journey with great potential for customer support improvements.",
-    useCases: [
-      {
-        title: "AI Customer Support Assistant",
-        description: "Deploy an AI agent that can handle common customer inquiries, reducing response time by up to 70%.",
-        link: "#customer-support-demo",
-        priority: 10
-      },
-      {
-        title: "Knowledge Base Enhancement",
-        description: "Use AI to improve your knowledge base by identifying gaps and generating helpful content.",
-        link: "#knowledge-base-demo",
-        priority: 8
-      },
-      {
-        title: "Customer Sentiment Analysis",
-        description: "Implement AI-powered sentiment analysis to identify customer satisfaction trends and issues.",
-        link: "#sentiment-analysis",
-        priority: 6
-      }
-    ],
-    resources: [
-      {
-        title: "Executive's Guide to AI Implementation",
-        description: "A comprehensive guide for business leaders implementing AI for the first time.",
-        link: "#executive-guide",
-        type: 'tutorial',
-        popularity: 95
-      },
-      {
-        title: "Customer Support ROI Calculator",
-        description: "Calculate the potential return on investment from AI-powered customer support.",
-        link: "#roi-calculator",
-        type: 'template',
-        popularity: 90
-      },
-      {
-        title: "Quick-Start Support Agent Template",
-        description: "A ready-to-customize template for deploying your first customer support AI agent.",
-        link: "#quick-start-template",
-        type: 'template',
-        popularity: 85
-      }
-    ],
-    nextSteps: [
-      "Schedule a discovery call with our AI consultants",
-      "Identify your top 3 customer support challenges",
-      "Explore our AI customer support template",
-      "Consider a 30-day pilot program"
-    ],
-    competitorAnalysis: competitorAnalyses['chatbot'],
-    implementationDifficulty: 'Low',
-    estimatedTimeToValue: '2-4 weeks',
-    estimatedCost: '$5,000-$15,000'
-  },
-  
-  // For CTO + Exploring + Data Analysis
-  'technical-exploring-data': {
-    maturityScore: 40,
-    maturityInsight: "You have a solid technical foundation and are well-positioned to implement data analysis AI solutions.",
-    useCases: [
-      {
-        title: "Automated Data Insights Agent",
-        description: "Deploy an AI system that continuously analyzes your data and surfaces valuable insights.",
-        link: "#data-insights-demo",
-        priority: 10
-      },
-      {
-        title: "Predictive Analytics Implementation",
-        description: "Use AI to predict future trends based on historical data across your business.",
-        link: "#predictive-analytics",
-        priority: 9
-      },
-      {
-        title: "Anomaly Detection System",
-        description: "Implement AI-powered anomaly detection to identify unusual patterns in your business data.",
-        link: "#anomaly-detection",
-        priority: 8
-      }
-    ],
-    resources: [
-      {
-        title: "Technical Implementation Playbook",
-        description: "Step-by-step guide for CTOs to implement AI data analysis tools.",
-        link: "#implementation-guide",
-        type: 'tutorial',
-        popularity: 98
-      },
-      {
-        title: "Data Analysis Architecture Blueprint",
-        description: "Reference architecture for building scalable AI data analysis systems.",
-        link: "#architecture-blueprint",
-        type: 'blog',
-        popularity: 92
-      },
-      {
-        title: "AI Integration Patterns Webinar",
-        description: "Technical deep-dive on integrating AI analysis into existing data pipelines.",
-        link: "#integration-webinar",
-        type: 'webinar',
-        popularity: 88
-      }
-    ],
-    nextSteps: [
-      "Audit your current data infrastructure",
-      "Identify integration points for AI capabilities",
-      "Review our API documentation",
-      "Start with a focused proof-of-concept"
-    ],
-    competitorAnalysis: competitorAnalyses['analytics'],
-    implementationDifficulty: 'Medium',
-    estimatedTimeToValue: '3-6 weeks',
-    estimatedCost: '$10,000-$25,000'
-  },
-  
-  // For Marketing + Piloting + Content Generation
-  'marketing-piloting-content': {
-    maturityScore: 60,
-    maturityInsight: "You're making good progress with AI content generation and ready to expand your capabilities.",
-    useCases: [
-      {
-        title: "Multi-channel Content Generation",
-        description: "Scale your content creation across all marketing channels with consistent messaging.",
-        link: "#content-generation-demo",
-        priority: 10
-      },
-      {
-        title: "Personalized Campaign Optimizer",
-        description: "Use AI to automatically optimize campaigns based on performance data and user behavior.",
-        link: "#campaign-optimizer",
-        priority: 9
-      },
-      {
-        title: "Audience Insights Generator",
-        description: "Apply AI to identify audience trends and content preferences to guide your strategy.",
-        link: "#audience-insights",
-        priority: 8
-      }
-    ],
-    resources: [
-      {
-        title: "AI for Modern Marketing Teams",
-        description: "Comprehensive guide to implementing AI across your marketing operations.",
-        link: "#marketing-ai-guide",
-        type: 'tutorial',
-        popularity: 96
-      },
-      {
-        title: "Content Generation Case Studies",
-        description: "Real-world examples of marketing teams achieving 10x productivity with AI.",
-        link: "#case-studies",
-        type: 'blog',
-        popularity: 90
-      },
-      {
-        title: "Campaign Optimization Template",
-        description: "Ready-to-use template for implementing AI-driven marketing campaign optimization.",
-        link: "#campaign-template",
-        type: 'template',
-        popularity: 85
-      }
-    ],
-    nextSteps: [
-      "Expand your pilot to include more content types",
-      "Integrate analytics to measure content performance",
-      "Train team members on advanced AI prompting",
-      "Set up A/B testing for AI vs human content"
-    ],
-    competitorAnalysis: competitorAnalyses['content'],
-    implementationDifficulty: 'Low',
-    estimatedTimeToValue: '1 week',
-    estimatedCost: '$1,500-$7,000'
-  },
-  
-  // Default recommendation
   'default': {
-    maturityScore: 35,
-    maturityInsight: "Based on your responses, you're making progress on your AI journey with opportunities to accelerate adoption.",
-    useCases: [
-      {
-        title: "Custom AI Agent Development",
-        description: "Build specialized AI agents tailored to your specific business needs and workflows.",
-        link: "#custom-agent-demo",
-        priority: 10
-      },
-      {
-        title: "Knowledge Management Solution",
-        description: "Implement an AI system to organize, search, and leverage your organizational knowledge.",
-        link: "#knowledge-management",
-        priority: 8
-      },
-      {
-        title: "Process Automation with AI",
-        description: "Identify and automate repetitive tasks in your business workflows using AI agents.",
-        link: "#process-automation",
-        priority: 7
-      }
-    ],
-    resources: [
-      {
-        title: "AI Implementation Roadmap",
-        description: "A step-by-step guide to implementing AI solutions in your organization.",
-        link: "#implementation-roadmap",
-        type: 'tutorial',
-        popularity: 94
-      },
-      {
-        title: "Lyzr Platform Overview",
-        description: "Learn how the Lyzr platform can accelerate your AI journey with pre-built components.",
-        link: "#platform-overview",
-        type: 'demo',
-        popularity: 90
-      },
-      {
-        title: "AI Strategy Workshop Materials",
-        description: "Templates and exercises to help you develop your organization's AI strategy.",
-        link: "#strategy-workshop",
-        type: 'template',
-        popularity: 86
-      }
-    ],
-    nextSteps: [
-      "Define your AI strategy and priorities",
-      "Identify quick-win opportunities",
-      "Schedule a demo with our solutions team",
-      "Explore our template library for your use case"
-    ],
-    implementationDifficulty: 'Medium',
-    estimatedTimeToValue: '4-8 weeks',
-    estimatedCost: '$10,000-$25,000'
+    title: 'Getting Started with AI',
+    description: 'A comprehensive guide to understanding and implementing AI in your business.',
+    type: 'learning',
+    priority: 'high'
+  },
+  'technical-starting-data_analysis': {
+    title: 'Technical AI Implementation Guide',
+    description: 'Step-by-step technical guide for implementing AI-powered data analysis.',
+    type: 'technical',
+    priority: 'high'
+  },
+  'marketing-exploring-marketing': {
+    title: 'AI Marketing Playbook',
+    description: 'Learn how to leverage AI for customer acquisition and engagement.',
+    type: 'business',
+    priority: 'high'
+  },
+  'founder-piloting-product': {
+    title: 'AI Product Strategy Guide',
+    description: 'Strategic framework for integrating AI into your product roadmap.',
+    type: 'strategy',
+    priority: 'high'
   }
 };
 
@@ -577,7 +361,6 @@ export function agentRespond(
   if (step === 1) {
     let journeyStage = '';
     
-    // More robust matching for journey stages
     if (normalizedInput.match(/(just starting|new to|beginning|first steps|getting started)/)) {
       journeyStage = 'starting';
     } else if (normalizedInput.match(/(exploring|researching|looking into|investigating)/)) {
@@ -586,18 +369,6 @@ export function agentRespond(
       journeyStage = 'piloting';
     } else if (normalizedInput.match(/(scaling|expanding|growing|implementing)/)) {
       journeyStage = 'scaling';
-    } else {
-      // If no clear match, ask for clarification
-      return {
-        content: "I want to make sure I understand correctly. Are you just starting with AI, exploring options, piloting use cases, or scaling existing solutions?",
-        responseType: 'multiChoice',
-        choices: [
-          "Just Starting - New to AI implementation",
-          "Exploring - Researching potential applications",
-          "Piloting - Testing specific use cases",
-          "Scaling - Expanding existing AI solutions"
-        ]
-      };
     }
     
     return {
@@ -605,37 +376,25 @@ export function agentRespond(
       responseType: agentMessages[2].responseType,
       choices: agentMessages[2].choices,
       tag: 'journeyStage',
-      value: journeyStage
+      value: journeyStage || normalizedInput
     };
   }
   
   // Store user's role at step 2
   if (step === 2) {
     let role = '';
-    
-    // More robust matching for roles
-    if (normalizedInput.match(/(founder|ceo|owner|executive|business leader)/)) {
+    if (normalizedInput.includes('founder') || normalizedInput.includes('ceo')) {
       role = 'founder';
-    } else if (normalizedInput.match(/(cto|technical|engineering|developer|architect)/)) {
+    } else if (normalizedInput.includes('cto') || normalizedInput.includes('technical')) {
       role = 'technical';
-    } else if (normalizedInput.match(/(marketing|growth|customer acquisition|brand)/)) {
+    } else if (normalizedInput.includes('marketing') || normalizedInput.includes('growth')) {
       role = 'marketing';
-    } else if (normalizedInput.match(/(hr|people|talent|recruiting|human resources)/)) {
+    } else if (normalizedInput.includes('hr') || normalizedInput.includes('people')) {
       role = 'hr';
+    } else if (normalizedInput.includes('operations') || normalizedInput.includes('finance')) {
+      role = 'operations';
     } else {
-      // If no clear match, ask for clarification
-      return {
-        content: "Could you clarify your role? Are you in business leadership, technical, marketing, HR, or another function?",
-        responseType: 'multiChoice',
-        choices: [
-          "Founder/CEO - Business leadership",
-          "CTO/Technical Leader - Technology focus",
-          "Marketing/Growth - Customer acquisition",
-          "HR/People Operations - Team management",
-          "Operations/Finance - Business processes",
-          "Other Business Function"
-        ]
-      };
+      role = 'other';
     }
     
     return {
@@ -647,35 +406,21 @@ export function agentRespond(
     };
   }
   
-  // Store user's area of interest at step 3
+  // Store user's interest area at step 3
   if (step === 3) {
     let interest = '';
-    
-    // More robust matching for interests
-    if (normalizedInput.match(/(customer support|service|help desk|support)/)) {
-      interest = 'support';
-    } else if (normalizedInput.match(/(marketing|content|campaign|brand|social media)/)) {
-      interest = 'content';
-    } else if (normalizedInput.match(/(data|analytics|insights|reporting|business intelligence)/)) {
-      interest = 'data';
-    } else if (normalizedInput.match(/(product|development|features|engineering)/)) {
+    if (normalizedInput.includes('customer support')) {
+      interest = 'customer_support';
+    } else if (normalizedInput.includes('marketing')) {
+      interest = 'marketing';
+    } else if (normalizedInput.includes('data analysis')) {
+      interest = 'data_analysis';
+    } else if (normalizedInput.includes('product')) {
       interest = 'product';
-    } else if (normalizedInput.match(/(knowledge|documentation|internal|training|learning)/)) {
+    } else if (normalizedInput.includes('knowledge')) {
       interest = 'knowledge';
     } else {
-      // If no clear match, ask for clarification
-      return {
-        content: "I want to understand your main area of interest. Are you looking at customer support, marketing, data analysis, product development, or knowledge management?",
-        responseType: 'multiChoice',
-        choices: [
-          "Customer Support - Automate responses",
-          "Marketing - Content and campaigns",
-          "Data Analysis - Business insights",
-          "Product Development - Smart features",
-          "Knowledge Management - Internal systems",
-          "Not Sure Yet - Exploring options"
-        ]
-      };
+      interest = 'exploring';
     }
     
     return {
@@ -687,133 +432,126 @@ export function agentRespond(
     };
   }
   
-  // Store user's help needed at step 4
+  // Store user's help need at step 4
   if (step === 4) {
-    let helpNeeded = '';
-    
-    // More robust matching for help needed
-    if (normalizedInput.match(/(tutorials|learning|education|training|getting started)/)) {
-      helpNeeded = 'learning';
-    } else if (normalizedInput.match(/(use cases|examples|case studies|real world|implementations)/)) {
-      helpNeeded = 'usecases';
-    } else if (normalizedInput.match(/(strategic|planning|roadmap|strategy|implementation plan)/)) {
-      helpNeeded = 'planning';
-    } else if (normalizedInput.match(/(technical|implementation|coding|development|integration)/)) {
-      helpNeeded = 'technical';
-    } else if (normalizedInput.match(/(business case|roi|return on investment|cost|benefits)/)) {
-      helpNeeded = 'roi';
-    } else {
-      // If no clear match, ask for clarification
-      return {
-        content: "What kind of help would be most valuable to you right now?",
-        responseType: 'multiChoice',
-        choices: [
-          "Tutorials & Learning - Educational resources",
-          "Use Cases - Real-world examples",
-          "Strategic Planning - Roadmap development",
-          "Technical Guidance - Implementation help",
-          "Business Case - ROI calculation"
-        ]
-      };
+    let helpNeed = '';
+    if (normalizedInput.includes('tutorials')) {
+      helpNeed = 'tutorials';
+    } else if (normalizedInput.includes('use cases')) {
+      helpNeed = 'use_cases';
+    } else if (normalizedInput.includes('strategic')) {
+      helpNeed = 'strategic';
+    } else if (normalizedInput.includes('technical')) {
+      helpNeed = 'technical';
+    } else if (normalizedInput.includes('business case')) {
+      helpNeed = 'business_case';
     }
     
     return {
       content: agentMessages[5].content,
       responseType: agentMessages[5].responseType,
       choices: agentMessages[5].choices,
-      tag: 'helpNeeded',
-      value: helpNeeded
+      tag: 'helpNeed',
+      value: helpNeed || normalizedInput
     };
   }
   
-  // Store user's industry at step 5 and proceed to final recommendations
+  // Store user's industry at step 5
   if (step === 5) {
     let industry = '';
-    
-    // More robust matching for industries
-    if (normalizedInput.match(/(technology|software|hardware|tech|saas)/)) {
+    if (normalizedInput.includes('technology')) {
       industry = 'technology';
-    } else if (normalizedInput.match(/(financial|banking|insurance|fintech|finance)/)) {
+    } else if (normalizedInput.includes('financial')) {
       industry = 'financial';
-    } else if (normalizedInput.match(/(healthcare|medical|health|pharma|biotech)/)) {
+    } else if (normalizedInput.includes('healthcare')) {
       industry = 'healthcare';
-    } else if (normalizedInput.match(/(retail|ecommerce|consumer|shopping|merchandise)/)) {
+    } else if (normalizedInput.includes('retail')) {
       industry = 'retail';
-    } else if (normalizedInput.match(/(manufacturing|production|industrial|factory|supply chain)/)) {
+    } else if (normalizedInput.includes('manufacturing')) {
       industry = 'manufacturing';
     } else {
-      // If no clear match, ask for clarification
-      return {
-        content: "Could you specify your industry? This helps me provide more relevant recommendations.",
-        responseType: 'multiChoice',
-        choices: [
-          "Technology - Software or hardware",
-          "Financial Services - Banking, insurance, etc.",
-          "Healthcare - Medical services or products",
-          "Retail & E-commerce - Consumer goods",
-          "Manufacturing - Industrial production",
-          "Other"
-        ]
-      };
+      industry = 'other';
     }
     
-    // Generate profile key based on collected data
-    const { role = '', journeyStage = '', interest = '' } = userProfile;
-    const profileKey = `${role}-${journeyStage}-${interest}`;
-    
-    // Lookup recommendation or use default
-    let recommendation = mockRecommendations[profileKey] || mockRecommendations['default'];
-    
-    // Enhance with industry-specific insights if available
-    const industryKey = getIndustryKey(industry);
-    if (industryInsights[industryKey]) {
-      recommendation = {
-        ...recommendation,
-        industryInsights: industryInsights[industryKey]
-      };
-    }
-    
-    // Add implementation difficulty, time to value, and cost if available
-    if (journeyStage && interest) {
-      let interestKey = interest;
-      if (!['support', 'content', 'data', 'product', 'knowledge'].includes(interestKey)) {
-        interestKey = 'data'; // default
-      }
-      
-      recommendation = {
-        ...recommendation,
-        implementationDifficulty: implementationDifficulty[journeyStage]?.[interestKey] || 'Medium',
-        estimatedTimeToValue: timeToValue[journeyStage]?.[interestKey] || '4-8 weeks',
-        estimatedCost: costEstimates[journeyStage]?.[interestKey] || '$10,000-$25,000'
-      };
-    }
-    
-    // Sort use cases by priority
-    recommendation.useCases.sort((a, b) => b.priority - a.priority);
-    
-    // Sort resources by popularity
-    recommendation.resources.sort((a, b) => b.popularity - a.popularity);
-    
-    // Personalized final message
-    const finalMessage = "Thanks for sharing your AI journey with me! Based on your responses, I've created a personalized AI readiness assessment and recommendations specifically tailored to your needs as a " + 
-      (role === 'founder' ? 'founder/CEO' : 
-       role === 'technical' ? 'technical leader' :
-       role === 'marketing' ? 'marketing professional' :
-       role === 'hr' ? 'HR professional' : 'business professional') + 
-      " in the " + (industry || 'technology') + " industry.";
+    // Generate personalized recommendations based on collected profile
+    const recommendations = generateRecommendations(userProfile, industry);
     
     return {
-      content: finalMessage,
+      content: "Thanks for sharing your AI journey with me! I've created a personalized AI readiness assessment for you.",
+      responseType: 'text',
       final: true,
-      recommendations: [recommendation],
-      tag: 'industry',
-      value: industry
+      recommendations
     };
   }
   
   // Fallback response
   return {
-    content: "Let me help you with your AI journey. What specifically are you looking to achieve?",
-    responseType: 'text'
+    content: "I didn't quite catch that. Could you please rephrase or select one of the options?",
+    responseType: 'multiChoice',
+    choices: agentMessages[step - 1].choices
   };
+}
+
+// Helper function to generate recommendations based on user profile
+function generateRecommendations(userProfile: Record<string, string>, industry: string): Recommendation[] {
+  const recommendations: Recommendation[] = [];
+  
+  // Basic recommendation based on journey stage
+  if (userProfile.journeyStage === 'starting') {
+    recommendations.push({
+      title: 'AI Fundamentals Course',
+      description: 'Start with our beginner-friendly course covering AI basics and use cases.',
+      type: 'learning',
+      priority: 'high'
+    });
+  }
+  
+  // Role-specific recommendations
+  if (userProfile.role === 'technical') {
+    recommendations.push({
+      title: 'Technical Implementation Guide',
+      description: 'Step-by-step guide for implementing AI solutions in your tech stack.',
+      type: 'technical',
+      priority: 'high'
+    });
+  } else if (userProfile.role === 'marketing') {
+    recommendations.push({
+      title: 'AI in Marketing Playbook',
+      description: 'Learn how to leverage AI for customer acquisition and engagement.',
+      type: 'business',
+      priority: 'high'
+    });
+  }
+  
+  // Interest area recommendations
+  if (userProfile.interest === 'data_analysis') {
+    recommendations.push({
+      title: 'Data Analysis Toolkit',
+      description: 'Essential tools and frameworks for AI-powered data analysis.',
+      type: 'tools',
+      priority: 'medium'
+    });
+  }
+  
+  // Help need recommendations
+  if (userProfile.helpNeed === 'strategic') {
+    recommendations.push({
+      title: 'AI Strategy Template',
+      description: 'Customizable template for building your AI implementation roadmap.',
+      type: 'strategy',
+      priority: 'high'
+    });
+  }
+  
+  // Industry-specific recommendations
+  if (industry === 'technology') {
+    recommendations.push({
+      title: 'Tech Industry AI Solutions',
+      description: 'Proven AI use cases and success stories from tech companies.',
+      type: 'industry',
+      priority: 'medium'
+    });
+  }
+  
+  return recommendations;
 }
