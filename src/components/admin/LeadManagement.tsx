@@ -480,9 +480,9 @@ const LeadManagement: React.FC = () => {
       </div>
       
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Leads Table/Grid */}
-        <div className={`${showEnrichment ? 'lg:col-span-2' : 'lg:col-span-3'} relative`}>
+        <div className={`${showEnrichment ? 'lg:col-span-3' : 'lg:col-span-4'} relative`}>
           {/* Click Me Prompt */}
           {renderClickablePrompt()}
           
