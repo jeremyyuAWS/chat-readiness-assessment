@@ -4,39 +4,39 @@ import ChatMessage from './ChatMessage';
 import MultiChoiceInput from './MultiChoiceInput';
 import { agentMessages, agentRespond, Recommendation } from '../utils/agentSimulator';
 import RecommendationsPanel from './RecommendationsPanel';
-import { useTracking } from '../context/TrackingContext';
+import { useTracking } from '../hooks/useTracking';
 import PulsatingTipButton from './PulsatingTipButton';
 import TypewriterText from './TypewriterText';
+
+interface Message {
+  id: number;
+  content: string;
+  sender: 'user' | 'agent';
+  timestamp: Date;
+  choices?: string[];
+}
 
 interface ChatInterfaceProps {
   onClose: () => void;
 }
 
-export type MessageType = {
-  id: string;
-  content: string;
-  sender: 'user' | 'agent';
-  choices?: string[];
-  responseType?: 'text' | 'multiChoice';
-};
-
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
-  const [messages, setMessages] = useState<MessageType[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [currentStep, setCurrentStep] = useState(0);
+  const [conversationStep, setConversationStep] = useState(0);
   const [userProfile, setUserProfile] = useState<Record<string, string>>({});
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [lastInteractionTime, setLastInteractionTime] = useState<Date | null>(null);
   const [dwellTimeTracking, setDwellTimeTracking] = useState(true);
   const [totalDwellTime, setTotalDwellTime] = useState(0);
   const [useTypewriter, setUseTypewriter] = useState(true);
-  const [currentTypewriterMessage, setCurrentTypewriterMessage] = useState<MessageType | null>(null);
+  const [currentTypewriterMessage, setCurrentTypewriterMessage] = useState<Message | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { startSession, endSession, addInteraction } = useTracking();
+  const { trackInteraction, startSession, endSession } = useTracking();
 
   // Start the conversation and tracking session
   useEffect(() => {
@@ -49,12 +49,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     setLastInteractionTime(new Date());
     
     const timer = setTimeout(() => {
-      const newMessage = {
-        id: '1',
+      const newMessage: Message = {
+        id: Date.now(),
         content: firstMessage.content,
-        sender: 'agent' as const,
-        responseType: firstMessage.responseType,
-        choices: firstMessage.choices
+        sender: 'agent',
+        timestamp: new Date()
       };
       
       setMessages([newMessage]);
@@ -62,7 +61,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         setCurrentTypewriterMessage(newMessage);
       }
       setIsTyping(false);
-      setCurrentStep(1);
+      setConversationStep(1);
     }, 1000);
     
     return () => clearTimeout(timer);
@@ -89,10 +88,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
   useEffect(() => {
     return () => {
       if (sessionId && !showRecommendations) {
-        endSession(sessionId, userProfile, false);
+        endSession('complete');
       }
     };
-  }, [sessionId, showRecommendations, userProfile]);
+  }, [sessionId, showRecommendations]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -106,134 +105,79 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     setLastInteractionTime(new Date());
   };
 
-  const handleSendMessage = () => {
-    if (inputText.trim() === '') return;
-    
-    const newMessage: MessageType = {
-      id: Date.now().toString(),
-      content: inputText,
-      sender: 'user'
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now(),
+      content: input,
+      sender: 'user',
+      timestamp: new Date()
     };
-    
-    updateUserInteraction();
-    setMessages(prev => [...prev, newMessage]);
-    setInputText('');
+
+    setMessages((prev: Message[]) => [...prev, userMessage]);
+    setInput('');
     setIsTyping(true);
-    
-    // Track question answered
-    addInteraction('question_answered', { 
-      questionIndex: currentStep, 
-      answer: inputText,
-      dwellTimeBefore: totalDwellTime
+
+    // Track user message
+    trackInteraction('user_message', {
+      message: input,
+      step: conversationStep
     });
-    
-    // Simulate agent thinking
-    setTimeout(() => {
-      const response = agentRespond(inputText, currentStep, userProfile);
-      if (response.final) {
-        setRecommendations(response.recommendations || []);
-        setShowRecommendations(true);
-        
-        // Track recommendation view and complete session
-        addInteraction('recommendation_viewed', {
-          totalQuestionsAnswered: currentStep,
-          totalDwellTime
-        });
-        
-        if (sessionId) {
-          endSession(sessionId, userProfile, true);
-        }
-      } else {
-        const newAgentMessage = {
-          id: Date.now().toString(),
-          content: response.content,
-          sender: 'agent' as const,
-          responseType: response.responseType,
-          choices: response.choices
-        };
-        
-        if (useTypewriter && !response.responseType) {
-          setCurrentTypewriterMessage(newAgentMessage);
-        }
-        
-        setMessages(prev => [...prev, newAgentMessage]);
-        
-        // Update user profile if response has tags
-        if (response.tag && response.value) {
-          setUserProfile(prev => ({
-            ...prev,
-            [response.tag]: response.value
-          }));
-        }
-        
-        setCurrentStep(currentStep + 1);
+
+    try {
+      const response = agentRespond(input, conversationStep, userProfile);
+      
+      // Update user profile if response includes new data
+      if (response.tag && response.value) {
+        setUserProfile((prev: Record<string, string>) => ({
+          ...prev,
+          [response.tag]: response.value
+        }));
       }
+
+      // Add slight delay for more natural conversation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const agentMessage: Message = {
+        id: Date.now(),
+        content: response.content,
+        sender: 'agent',
+        timestamp: new Date(),
+        choices: response.choices
+      };
+
+      setMessages((prev: Message[]) => [...prev, agentMessage]);
+      setConversationStep(prev => prev + 1);
+
+      // Track agent response
+      trackInteraction('agent_response', {
+        message: response.content,
+        step: conversationStep,
+        choices: response.choices
+      });
+
+      // If conversation is complete, end session
+      if (conversationStep === agentMessages.length - 1) {
+        endSession('complete');
+      }
+    } catch (error) {
+      console.error('Error processing message:', error);
+      const errorMessage: Message = {
+        id: Date.now(),
+        content: "I apologize, but I'm having trouble processing your response. Could you please try again?",
+        sender: 'agent',
+        timestamp: new Date()
+      };
+      setMessages((prev: Message[]) => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const handleChoiceSelect = (choice: string) => {
-    const newMessage: MessageType = {
-      id: Date.now().toString(),
-      content: choice,
-      sender: 'user'
-    };
-    
-    updateUserInteraction();
-    setMessages(prev => [...prev, newMessage]);
-    setIsTyping(true);
-    
-    // Track question answered
-    addInteraction('question_answered', { 
-      questionIndex: currentStep, 
-      answer: choice,
-      dwellTimeBefore: totalDwellTime
-    });
-    
-    // Simulate agent thinking
-    setTimeout(() => {
-      const response = agentRespond(choice, currentStep, userProfile);
-      
-      if (response.final) {
-        setRecommendations(response.recommendations || []);
-        setShowRecommendations(true);
-        
-        // Track recommendation view and complete session
-        addInteraction('recommendation_viewed', {
-          totalQuestionsAnswered: currentStep,
-          totalDwellTime
-        });
-        
-        if (sessionId) {
-          endSession(sessionId, userProfile, true);
-        }
-      } else {
-        const newAgentMessage = {
-          id: Date.now().toString(),
-          content: response.content,
-          sender: 'agent' as const,
-          responseType: response.responseType,
-          choices: response.choices
-        };
-        
-        if (useTypewriter && !response.responseType) {
-          setCurrentTypewriterMessage(newAgentMessage);
-        }
-        
-        setMessages(prev => [...prev, newAgentMessage]);
-        
-        // Update user profile if response has tags
-        if (response.tag && response.value) {
-          setUserProfile(prev => ({
-            ...prev,
-            [response.tag]: response.value
-          }));
-        }
-        
-        setCurrentStep(currentStep + 1);
-      }
-      setIsTyping(false);
-    }, 1500);
+    setInput(choice);
+    handleSendMessage();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -246,20 +190,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
   const handleClose = () => {
     // Track session end before closing
     if (sessionId && !showRecommendations) {
-      endSession(sessionId, userProfile, false);
+      endSession('complete');
     }
     onClose();
   };
   
   const handleMessageReaction = (reaction: 'helpful' | 'not-helpful') => {
-    addInteraction('message_reaction', { reaction });
+    trackInteraction('message_reaction', { reaction });
   };
   
   const handleTypewriterComplete = () => {
     setCurrentTypewriterMessage(null);
   };
 
-  const renderMessage = (message: MessageType) => {
+  const renderMessage = (message: Message) => {
     // If this message is currently being typewritten, render the typewriter component
     if (useTypewriter && currentTypewriterMessage && currentTypewriterMessage.id === message.id) {
       return (
@@ -276,7 +220,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
             text={message.content} 
             delay={20} 
             onComplete={handleTypewriterComplete}
-            className={`whitespace-pre-wrap ${message.responseType === 'multiChoice' ? 'font-medium' : ''}`}
+            className={`whitespace-pre-wrap ${message.choices ? 'font-medium' : ''}`}
           />
         </ChatMessage>
       );
@@ -312,7 +256,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         </div>
         
         <div className="flex items-center space-x-2">
-          {currentStep > 1 && !showRecommendations && (
+          {conversationStep > 1 && !showRecommendations && (
             <div className="bg-indigo-500 hover:bg-indigo-400 rounded-md p-2 cursor-pointer transition-colors">
               <BarChart3 className="h-4 w-4" />
             </div>
@@ -330,7 +274,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       <div className="h-1 bg-gray-100 w-full">
         <div 
           className="h-full bg-indigo-500 transition-all duration-300"
-          style={{ width: `${Math.min((currentStep / 6) * 100, 100)}%` }}
+          style={{ width: `${Math.min((conversationStep / 6) * 100, 100)}%` }}
         ></div>
       </div>
       
@@ -364,25 +308,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
           </div>
           
           {/* Pulsating Tip Button */}
-          <PulsatingTipButton currentStep={currentStep} />
+          <PulsatingTipButton currentStep={conversationStep} />
           
           {/* Input Area */}
           <div className="p-4 border-t border-gray-200 bg-white">
             <div className="flex items-center">
               <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Type your message..."
                 className="flex-1 border border-gray-300 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none max-h-20"
                 rows={1}
-                disabled={isTyping || messages[messages.length - 1]?.responseType === 'multiChoice' || !!currentTypewriterMessage}
+                disabled={isTyping || messages[messages.length - 1]?.choices}
               />
               <button
                 onClick={handleSendMessage}
-                disabled={isTyping || inputText.trim() === '' || messages[messages.length - 1]?.responseType === 'multiChoice' || !!currentTypewriterMessage}
+                disabled={isTyping || input.trim() === '' || messages[messages.length - 1]?.choices}
                 className={`bg-indigo-600 p-3 rounded-r-lg ${
-                  isTyping || inputText.trim() === '' || messages[messages.length - 1]?.responseType === 'multiChoice' || !!currentTypewriterMessage
+                  isTyping || input.trim() === '' || messages[messages.length - 1]?.choices
                     ? 'opacity-50 cursor-not-allowed'
                     : 'hover:bg-indigo-700'
                 }`}
@@ -391,9 +335,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              {currentStep === 1 ? (
+              {conversationStep === 1 ? (
                 "This is a demo of Lyzr's AI agent capabilities. AI recommendations are for demonstration purposes."
-              ) : currentStep >= 4 ? (
+              ) : conversationStep >= 4 ? (
                 "Almost there! Your personalized AI recommendations will be ready soon."
               ) : (
                 "This short assessment helps us understand your AI readiness."

@@ -10,14 +10,11 @@ import { TrackingProvider } from './context/TrackingContext';
 function App() {
   const [showChat, setShowChat] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const [chatInitiatedAt, setChatInitiatedAt] = useState<Date | null>(null);
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   const handleStartChat = () => {
     setShowWelcomeModal(true);
-    // Track when the chat is initiated for analytics purposes
-    setChatInitiatedAt(new Date());
   };
 
   const handleCloseWelcomeModal = () => {

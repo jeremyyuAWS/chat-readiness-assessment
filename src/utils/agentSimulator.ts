@@ -570,18 +570,34 @@ export function agentRespond(
   step: number,
   userProfile: Record<string, string>
 ): AgentResponse {
+  // Normalize user input
+  const normalizedInput = userInput.toLowerCase().trim();
+  
   // Store user's journey stage at step 1
   if (step === 1) {
     let journeyStage = '';
     
-    if (userInput.toLowerCase().includes('just starting')) {
+    // More robust matching for journey stages
+    if (normalizedInput.match(/(just starting|new to|beginning|first steps|getting started)/)) {
       journeyStage = 'starting';
-    } else if (userInput.toLowerCase().includes('exploring')) {
+    } else if (normalizedInput.match(/(exploring|researching|looking into|investigating)/)) {
       journeyStage = 'exploring';
-    } else if (userInput.toLowerCase().includes('piloting')) {
+    } else if (normalizedInput.match(/(piloting|testing|trying out|experimenting)/)) {
       journeyStage = 'piloting';
-    } else if (userInput.toLowerCase().includes('scaling')) {
+    } else if (normalizedInput.match(/(scaling|expanding|growing|implementing)/)) {
       journeyStage = 'scaling';
+    } else {
+      // If no clear match, ask for clarification
+      return {
+        content: "I want to make sure I understand correctly. Are you just starting with AI, exploring options, piloting use cases, or scaling existing solutions?",
+        responseType: 'multiChoice',
+        choices: [
+          "Just Starting - New to AI implementation",
+          "Exploring - Researching potential applications",
+          "Piloting - Testing specific use cases",
+          "Scaling - Expanding existing AI solutions"
+        ]
+      };
     }
     
     return {
@@ -597,16 +613,29 @@ export function agentRespond(
   if (step === 2) {
     let role = '';
     
-    if (userInput.toLowerCase().includes('founder')) {
+    // More robust matching for roles
+    if (normalizedInput.match(/(founder|ceo|owner|executive|business leader)/)) {
       role = 'founder';
-    } else if (userInput.toLowerCase().includes('cto') || userInput.toLowerCase().includes('technical')) {
+    } else if (normalizedInput.match(/(cto|technical|engineering|developer|architect)/)) {
       role = 'technical';
-    } else if (userInput.toLowerCase().includes('marketing')) {
+    } else if (normalizedInput.match(/(marketing|growth|customer acquisition|brand)/)) {
       role = 'marketing';
-    } else if (userInput.toLowerCase().includes('hr')) {
+    } else if (normalizedInput.match(/(hr|people|talent|recruiting|human resources)/)) {
       role = 'hr';
     } else {
-      role = 'other';
+      // If no clear match, ask for clarification
+      return {
+        content: "Could you clarify your role? Are you in business leadership, technical, marketing, HR, or another function?",
+        responseType: 'multiChoice',
+        choices: [
+          "Founder/CEO - Business leadership",
+          "CTO/Technical Leader - Technology focus",
+          "Marketing/Growth - Customer acquisition",
+          "HR/People Operations - Team management",
+          "Operations/Finance - Business processes",
+          "Other Business Function"
+        ]
+      };
     }
     
     return {
@@ -622,18 +651,31 @@ export function agentRespond(
   if (step === 3) {
     let interest = '';
     
-    if (userInput.toLowerCase().includes('customer support')) {
+    // More robust matching for interests
+    if (normalizedInput.match(/(customer support|service|help desk|support)/)) {
       interest = 'support';
-    } else if (userInput.toLowerCase().includes('marketing')) {
+    } else if (normalizedInput.match(/(marketing|content|campaign|brand|social media)/)) {
       interest = 'content';
-    } else if (userInput.toLowerCase().includes('data')) {
+    } else if (normalizedInput.match(/(data|analytics|insights|reporting|business intelligence)/)) {
       interest = 'data';
-    } else if (userInput.toLowerCase().includes('product')) {
+    } else if (normalizedInput.match(/(product|development|features|engineering)/)) {
       interest = 'product';
-    } else if (userInput.toLowerCase().includes('knowledge')) {
+    } else if (normalizedInput.match(/(knowledge|documentation|internal|training|learning)/)) {
       interest = 'knowledge';
     } else {
-      interest = 'other';
+      // If no clear match, ask for clarification
+      return {
+        content: "I want to understand your main area of interest. Are you looking at customer support, marketing, data analysis, product development, or knowledge management?",
+        responseType: 'multiChoice',
+        choices: [
+          "Customer Support - Automate responses",
+          "Marketing - Content and campaigns",
+          "Data Analysis - Business insights",
+          "Product Development - Smart features",
+          "Knowledge Management - Internal systems",
+          "Not Sure Yet - Exploring options"
+        ]
+      };
     }
     
     return {
@@ -649,18 +691,30 @@ export function agentRespond(
   if (step === 4) {
     let helpNeeded = '';
     
-    if (userInput.toLowerCase().includes('tutorials')) {
+    // More robust matching for help needed
+    if (normalizedInput.match(/(tutorials|learning|education|training|getting started)/)) {
       helpNeeded = 'learning';
-    } else if (userInput.toLowerCase().includes('use cases')) {
+    } else if (normalizedInput.match(/(use cases|examples|case studies|real world|implementations)/)) {
       helpNeeded = 'usecases';
-    } else if (userInput.toLowerCase().includes('strategic')) {
+    } else if (normalizedInput.match(/(strategic|planning|roadmap|strategy|implementation plan)/)) {
       helpNeeded = 'planning';
-    } else if (userInput.toLowerCase().includes('technical')) {
+    } else if (normalizedInput.match(/(technical|implementation|coding|development|integration)/)) {
       helpNeeded = 'technical';
-    } else if (userInput.toLowerCase().includes('business case')) {
+    } else if (normalizedInput.match(/(business case|roi|return on investment|cost|benefits)/)) {
       helpNeeded = 'roi';
     } else {
-      helpNeeded = 'general';
+      // If no clear match, ask for clarification
+      return {
+        content: "What kind of help would be most valuable to you right now?",
+        responseType: 'multiChoice',
+        choices: [
+          "Tutorials & Learning - Educational resources",
+          "Use Cases - Real-world examples",
+          "Strategic Planning - Roadmap development",
+          "Technical Guidance - Implementation help",
+          "Business Case - ROI calculation"
+        ]
+      };
     }
     
     return {
@@ -676,18 +730,31 @@ export function agentRespond(
   if (step === 5) {
     let industry = '';
     
-    if (userInput.toLowerCase().includes('technology')) {
+    // More robust matching for industries
+    if (normalizedInput.match(/(technology|software|hardware|tech|saas)/)) {
       industry = 'technology';
-    } else if (userInput.toLowerCase().includes('financial')) {
+    } else if (normalizedInput.match(/(financial|banking|insurance|fintech|finance)/)) {
       industry = 'financial';
-    } else if (userInput.toLowerCase().includes('healthcare')) {
+    } else if (normalizedInput.match(/(healthcare|medical|health|pharma|biotech)/)) {
       industry = 'healthcare';
-    } else if (userInput.toLowerCase().includes('retail')) {
+    } else if (normalizedInput.match(/(retail|ecommerce|consumer|shopping|merchandise)/)) {
       industry = 'retail';
-    } else if (userInput.toLowerCase().includes('manufacturing')) {
+    } else if (normalizedInput.match(/(manufacturing|production|industrial|factory|supply chain)/)) {
       industry = 'manufacturing';
     } else {
-      industry = 'other';
+      // If no clear match, ask for clarification
+      return {
+        content: "Could you specify your industry? This helps me provide more relevant recommendations.",
+        responseType: 'multiChoice',
+        choices: [
+          "Technology - Software or hardware",
+          "Financial Services - Banking, insurance, etc.",
+          "Healthcare - Medical services or products",
+          "Retail & E-commerce - Consumer goods",
+          "Manufacturing - Industrial production",
+          "Other"
+        ]
+      };
     }
     
     // Generate profile key based on collected data
