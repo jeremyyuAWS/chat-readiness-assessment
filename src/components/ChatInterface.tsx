@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Loader2, BarChart3 } from 'lucide-react';
+import { X, Send, Loader2, BarChart3, Play, Pause } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import MultiChoiceInput from './MultiChoiceInput';
 import { agentMessages, agentRespond, Recommendation, DEMO_MODE_RESPONSES } from '../utils/agentSimulator';
 import RecommendationsPanel from './RecommendationsPanel';
 import { useTracking, InteractionType } from '../context/TrackingContext';
-import PulsatingTipButton from './PulsatingTipButton';
 import TypewriterText from './TypewriterText';
 
 interface Message {
@@ -41,6 +40,12 @@ const calculateTypingDelay = (text: string, isAgent: boolean) => {
   return delay + (Math.random() * variance * 2 - variance);
 };
 
+// Add new interface for demo mode
+interface DemoModeState {
+  isAuto: boolean;
+  isActive: boolean;
+}
+
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -55,7 +60,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
   const [totalDwellTime, setTotalDwellTime] = useState(0);
   const [useTypewriter] = useState(true);
   const [currentTypewriterMessage, setCurrentTypewriterMessage] = useState<Message | null>(null);
-  const [isDemoMode] = useState(true);
+  const [demoMode, setDemoMode] = useState<DemoModeState>({ isAuto: true, isActive: true });
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addInteraction, startSession, endSession } = useTracking();
@@ -70,7 +75,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     setIsTyping(true);
     
     const timer = setTimeout(() => {
-      const response = agentRespond('', 0, {}, isDemoMode);
+      const response = agentRespond('', 0, {}, demoMode.isActive);
       const newMessage: Message = {
         id: Date.now(),
         content: response.content,
@@ -88,7 +93,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       setConversationStep(1);
 
       // In demo mode, automatically send the first user response after a delay
-      if (isDemoMode) {
+      if (demoMode.isActive) {
         const demoResponse = DEMO_MODE_RESPONSES[1];
         setTimeout(() => {
           handleDemoResponse(demoResponse.answer, 1);
@@ -137,21 +142,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     setLastInteractionTime(new Date());
   };
 
-  // Handle demo mode responses
+  // Add toggle handler
+  const toggleDemoMode = () => {
+    setDemoMode(prev => ({ ...prev, isAuto: !prev.isAuto }));
+  };
+
+  // Update handleDemoResponse to respect manual mode
   const handleDemoResponse = (answer: string, step: number) => {
     // Add user message
     const userMessage: Message = {
       id: Date.now(),
       content: answer,
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
+      responseType: 'text'
     };
     setMessages(prev => [...prev, userMessage]);
     
     // Add a small delay before showing typing indicator
     setTimeout(() => {
       setIsTyping(true);
-    }, 300); // Reduced from 500ms
+    }, 300);
 
     // Track user message
     addInteraction('question_answered' as InteractionType, {
@@ -160,12 +171,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     });
 
     // Get agent response
-    const response = agentRespond(answer, step, userProfile, isDemoMode);
+    const response = agentRespond(answer, step, userProfile, demoMode.isActive);
     
-    // Calculate typing delay based on message length - faster for agent
     const typingDelay = calculateTypingDelay(response.content, true);
     
-    // Show typing indicator for a realistic duration
     setTimeout(() => {
       const agentMessage: Message = {
         id: Date.now(),
@@ -182,22 +191,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       }
       setIsTyping(false);
       
-      // Update conversation state
       if (response.final) {
         setShowRecommendations(true);
       } else {
         setConversationStep(prev => prev + 1);
         
-        // Continue demo mode responses with shorter delay
-        if (isDemoMode && DEMO_MODE_RESPONSES[step + 1]) {
+        // Only auto-proceed if in auto demo mode
+        if (demoMode.isAuto && demoMode.isActive && DEMO_MODE_RESPONSES[step + 1]) {
           const nextResponse = DEMO_MODE_RESPONSES[step + 1];
           setTimeout(() => {
             handleDemoResponse(nextResponse.answer, step + 1);
-          }, nextResponse.delay + 500); // Reduced from 1000ms
+          }, nextResponse.delay + 500);
         }
       }
       
-      // Update user profile if response contains a tag
       if (response.tag && response.value) {
         const tag = response.tag as string;
         setUserProfile(prev => ({
@@ -206,17 +213,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         }));
       }
       
-      // Store recommendations if provided
       if (response.recommendations) {
         setRecommendations(response.recommendations);
       }
     }, typingDelay);
   };
 
+  // Add manual demo response handler
+  const handleManualDemoStep = () => {
+    if (!demoMode.isActive || isTyping) return;
+    const nextStep = conversationStep;
+    if (DEMO_MODE_RESPONSES[nextStep]) {
+      handleDemoResponse(DEMO_MODE_RESPONSES[nextStep].answer, nextStep);
+    }
+  };
+
   const handleSendMessage = () => {
     if (!input.trim() || isTyping) return;
 
-    if (isDemoMode) {
+    if (demoMode.isActive) {
       // In demo mode, ignore manual input and use pre-written responses
       return;
     }
@@ -360,6 +375,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         </div>
         
         <div className="flex items-center space-x-2">
+          {demoMode.isActive && (
+            <button
+              onClick={toggleDemoMode}
+              className="bg-indigo-500 hover:bg-indigo-400 rounded-md p-2 cursor-pointer transition-colors flex items-center"
+              title={demoMode.isAuto ? "Switch to manual mode" : "Switch to auto mode"}
+            >
+              {demoMode.isAuto ? (
+                <Pause className="h-4 w-4" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+            </button>
+          )}
           {conversationStep > 1 && !showRecommendations && (
             <div className="bg-indigo-500 hover:bg-indigo-400 rounded-md p-2 cursor-pointer transition-colors">
               <BarChart3 className="h-4 w-4" />
@@ -411,9 +439,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
             <div ref={messagesEndRef} />
           </div>
           
-          {/* Pulsating Tip Button */}
-          <PulsatingTipButton currentStep={conversationStep} />
-          
           {/* Input Area */}
           <div className="p-4 border-t border-gray-200 bg-white">
             <div className="flex items-center">
@@ -421,25 +446,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Type your message..."
+                placeholder={demoMode.isActive && !demoMode.isAuto ? "Click 'Next' to proceed with demo" : "Type your message..."}
                 className="flex-1 border border-gray-300 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none max-h-20"
                 rows={1}
-                disabled={isTyping || (messages[messages.length - 1]?.responseType === 'multiChoice')}
+                disabled={isTyping || (messages[messages.length - 1]?.responseType === 'multiChoice') || demoMode.isActive}
               />
-              <button
-                onClick={handleSendMessage}
-                disabled={isTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')}
-                className={`bg-indigo-600 p-3 rounded-r-lg ${
-                  isTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:bg-indigo-700'
-                }`}
-              >
-                <Send className="h-5 w-5 text-white" />
-              </button>
+              {demoMode.isActive && !demoMode.isAuto ? (
+                <button
+                  onClick={handleManualDemoStep}
+                  disabled={isTyping}
+                  className={`bg-indigo-600 px-6 py-3 rounded-r-lg ${
+                    isTyping ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'
+                  }`}
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  onClick={handleSendMessage}
+                  disabled={isTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')}
+                  className={`bg-indigo-600 p-3 rounded-r-lg ${
+                    isTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')
+                      ? 'opacity-50 cursor-not-allowed'
+                      : 'hover:bg-indigo-700'
+                  }`}
+                >
+                  <Send className="h-5 w-5 text-white" />
+                </button>
+              )}
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              {conversationStep === 1 ? (
+              {demoMode.isActive && !demoMode.isAuto ? (
+                "Manual demo mode - Click 'Next' to proceed through the demo"
+              ) : conversationStep === 1 ? (
                 "This is a demo of Lyzr's AI agent capabilities. AI recommendations are for demonstration purposes."
               ) : conversationStep >= 4 ? (
                 "Almost there! Your personalized AI recommendations will be ready soon."
