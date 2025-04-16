@@ -167,8 +167,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     // Find matching demo response or use custom input
     const matchingResponse = findMatchingDemoResponse(answer, step);
     const finalAnswer = matchingResponse || answer;
+    const isCustomInput = !matchingResponse;
     
-    // Add user message with typing animation
+    // Add user message with typing animation only for custom input
     const userMessage: Message = {
       id: Date.now(),
       content: finalAnswer,
@@ -177,64 +178,65 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       responseType: 'text'
     };
     
-    // Calculate typing delay for user message
-    const userTypingDelay = calculateTypingDelay(finalAnswer, false);
-    setIsUserTyping(true);
-    
-    setTimeout(() => {
-      setMessages(prev => [...prev, userMessage]);
-      if (useTypewriter) {
-        setCurrentTypewriterMessage(userMessage);
-      }
-      setIsUserTyping(false);
+    if (isCustomInput) {
+      // Calculate typing delay for custom user message
+      const userTypingDelay = calculateTypingDelay(finalAnswer, false);
+      setIsUserTyping(true);
       
-      // Get agent response immediately after user message
-      const response = agentRespond(finalAnswer, step, userProfile, demoMode.isActive);
-      const agentMessage: Message = {
-        id: Date.now(),
-        content: response.content,
-        sender: 'agent',
-        timestamp: new Date(),
-        choices: response.choices,
-        responseType: response.responseType
-      };
-      
-      setMessages(prev => [...prev, agentMessage]);
-      
-      if (response.final) {
-        setShowRecommendations(true);
-      } else {
-        setConversationStep(prev => prev + 1);
-        
-        // Only auto-proceed if in auto demo mode and using pre-written responses
-        if (demoMode.isAuto && demoMode.isActive && DEMO_MODE_RESPONSES[step + 1] && matchingResponse) {
-          const nextResponse = DEMO_MODE_RESPONSES[step + 1];
-          setTimeout(() => {
-            handleDemoResponse(nextResponse.answer, step + 1);
-          }, nextResponse.delay + 500);
+      setTimeout(() => {
+        setMessages(prev => [...prev, userMessage]);
+        if (useTypewriter) {
+          setCurrentTypewriterMessage(userMessage);
         }
-      }
-      
-      if (response.tag && response.value) {
-        const tag = response.tag as string;
-        setUserProfile(prev => ({
-          ...prev,
-          [tag]: response.value as string
-        }));
-      }
-      
-      if (response.recommendations) {
-        setRecommendations(response.recommendations);
-      }
-    }, userTypingDelay);
+        setIsUserTyping(false);
+        processAgentResponse(finalAnswer, step);
+      }, userTypingDelay);
+    } else {
+      // For pre-written selections, show message immediately
+      setMessages(prev => [...prev, userMessage]);
+      processAgentResponse(finalAnswer, step);
+    }
   };
 
-  // Update handleManualDemoStep to handle custom input
-  const handleManualDemoStep = () => {
-    if (!demoMode.isActive || isTyping || isUserTyping) return;
-    const nextStep = conversationStep;
-    if (DEMO_MODE_RESPONSES[nextStep]) {
-      handleDemoResponse(DEMO_MODE_RESPONSES[nextStep].answer, nextStep);
+  // Add helper function to process agent response
+  const processAgentResponse = (answer: string, step: number) => {
+    // Get agent response immediately after user message
+    const response = agentRespond(answer, step, userProfile, demoMode.isActive);
+    const agentMessage: Message = {
+      id: Date.now(),
+      content: response.content,
+      sender: 'agent',
+      timestamp: new Date(),
+      choices: response.choices,
+      responseType: response.responseType
+    };
+    
+    setMessages(prev => [...prev, agentMessage]);
+    
+    if (response.final) {
+      setShowRecommendations(true);
+    } else {
+      setConversationStep(prev => prev + 1);
+      
+      // Only auto-proceed if in auto demo mode and using pre-written responses
+      if (demoMode.isAuto && demoMode.isActive && DEMO_MODE_RESPONSES[step + 1]) {
+        const nextResponse = DEMO_MODE_RESPONSES[step + 1];
+        setTimeout(() => {
+          handleDemoResponse(nextResponse.answer, step + 1);
+        }, nextResponse.delay + 500);
+      }
+    }
+    
+    if (response.tag && response.value) {
+      const tag = response.tag as string;
+      setUserProfile(prev => ({
+        ...prev,
+        [tag]: response.value as string
+      }));
+    }
+    
+    if (response.recommendations) {
+      setRecommendations(response.recommendations);
     }
   };
 
@@ -301,10 +303,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     }, userTypingDelay);
   };
 
+  // Update handleChoiceSelect to not show typing animation
   const handleChoiceSelect = (choice: string) => {
-    if (isTyping) return;
+    if (isTyping || isUserTyping) return;
     setInput(choice);
-    handleSendMessage();
+    handleDemoResponse(choice, conversationStep);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -357,6 +360,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         onReaction={handleMessageReaction}
       />
     );
+  };
+
+  // Add helper function for manual demo step
+  const handleManualDemoStep = () => {
+    if (!demoMode.isActive || isTyping || isUserTyping) return;
+    const nextStep = conversationStep;
+    if (DEMO_MODE_RESPONSES[nextStep]) {
+      handleDemoResponse(DEMO_MODE_RESPONSES[nextStep].answer, nextStep);
+    }
   };
 
   return (
