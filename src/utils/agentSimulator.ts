@@ -47,6 +47,39 @@ export interface Recommendation {
   priority: 'high' | 'medium' | 'low';
 }
 
+// Add demo mode types and configurations
+export interface DemoResponse {
+  answer: string;
+  delay: number;
+}
+
+export const DEMO_MODE_RESPONSES: Record<number, DemoResponse> = {
+  1: {
+    answer: "Yes, I'd love to learn more about AI implementation!",
+    delay: 1500
+  },
+  2: {
+    answer: "Just Starting - New to AI implementation",
+    delay: 2000
+  },
+  3: {
+    answer: "CTO/Technical Leader - Technology focus",
+    delay: 2500
+  },
+  4: {
+    answer: "Data Analysis - Business insights",
+    delay: 2000
+  },
+  5: {
+    answer: "Strategic Planning - Roadmap development",
+    delay: 2500
+  },
+  6: {
+    answer: "Technology - Software or hardware",
+    delay: 2000
+  }
+};
+
 // Pre-defined agent messages
 export const agentMessages: AgentMessage[] = [
   {
@@ -348,12 +381,27 @@ function getCompetitorAnalysis(interest: string): CompetitorAnalysis[] {
   return competitorAnalyses['chatbot']; // default
 }
 
-// Agent response logic
+// Modify the agentRespond function to handle initial greeting
 export function agentRespond(
   userInput: string, 
   step: number,
-  userProfile: Record<string, string>
+  userProfile: Record<string, string>,
+  isDemo: boolean = false
 ): AgentResponse {
+  // For step 0 (initial greeting), return the first message
+  if (step === 0) {
+    return {
+      content: agentMessages[0].content,
+      responseType: 'text'
+    };
+  }
+
+  // If in demo mode, use pre-written responses
+  if (isDemo && DEMO_MODE_RESPONSES[step]) {
+    const demoResponse = DEMO_MODE_RESPONSES[step];
+    userInput = demoResponse.answer;
+  }
+
   // Normalize user input
   const normalizedInput = userInput.toLowerCase().trim();
   

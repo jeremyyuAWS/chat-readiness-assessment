@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Loader2, BarChart3 } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import MultiChoiceInput from './MultiChoiceInput';
-import { agentMessages, agentRespond, Recommendation } from '../utils/agentSimulator';
+import { agentMessages, agentRespond, Recommendation, DEMO_MODE_RESPONSES } from '../utils/agentSimulator';
 import RecommendationsPanel from './RecommendationsPanel';
 import { useTracking, InteractionType } from '../context/TrackingContext';
 import PulsatingTipButton from './PulsatingTipButton';
@@ -14,6 +14,7 @@ interface Message {
   sender: 'user' | 'agent';
   timestamp: Date;
   choices?: string[];
+  responseType?: 'text' | 'multiChoice';
 }
 
 interface ChatInterfaceProps {
@@ -23,7 +24,8 @@ interface ChatInterfaceProps {
 interface ChatMessageProps {
   message: Message;
   onChoiceSelect: (choice: string) => void;
-  onReaction?: (reaction: 'helpful' | 'not-helpful') => void;
+  onReaction: (reaction: 'helpful' | 'not-helpful') => void;
+  children?: React.ReactNode;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
@@ -40,26 +42,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
   const [totalDwellTime, setTotalDwellTime] = useState(0);
   const [useTypewriter] = useState(true);
   const [currentTypewriterMessage, setCurrentTypewriterMessage] = useState<Message | null>(null);
+  const [isDemoMode] = useState(true);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addInteraction, startSession, endSession } = useTracking();
 
   // Start the conversation and tracking session
   useEffect(() => {
-    const firstMessage = agentMessages[0];
-    setIsTyping(true);
-    
-    // Start analytics tracking session
     const newSessionId = startSession(document.referrer);
     setSessionId(newSessionId);
     setLastInteractionTime(new Date());
     
+    // Initiate conversation with first agent message
+    setIsTyping(true);
+    
     const timer = setTimeout(() => {
+      const response = agentRespond('', 0, {}, isDemoMode);
       const newMessage: Message = {
         id: Date.now(),
-        content: firstMessage.content,
+        content: response.content,
         sender: 'agent',
-        timestamp: new Date()
+        timestamp: new Date(),
+        choices: response.choices,
+        responseType: response.responseType || 'text'
       };
       
       setMessages([newMessage]);
@@ -68,10 +73,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       }
       setIsTyping(false);
       setConversationStep(1);
+
+      // In demo mode, automatically send the first user response after a delay
+      if (isDemoMode) {
+        const demoResponse = DEMO_MODE_RESPONSES[1];
+        setTimeout(() => {
+          handleDemoResponse(demoResponse.answer, 1);
+        }, demoResponse.delay);
+      }
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [startSession, useTypewriter]);
+  }, []);
 
   // Track dwell time
   useEffect(() => {
@@ -111,25 +124,93 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
     setLastInteractionTime(new Date());
   };
 
-  const handleSendMessage = () => {
-    if (!input.trim()) return;
-
+  // Handle demo mode responses
+  const handleDemoResponse = (answer: string, step: number) => {
     // Add user message
     const userMessage: Message = {
       id: Date.now(),
-      content: input,
+      content: answer,
       sender: 'user',
       timestamp: new Date()
     };
     setMessages(prev => [...prev, userMessage]);
-    setInput('');
     setIsTyping(true);
 
     // Track user message
     addInteraction('question_answered' as InteractionType, {
-      message: input,
-      step: conversationStep
+      message: answer,
+      step: step
     });
+
+    // Get agent response
+    setTimeout(() => {
+      const response = agentRespond(answer, step, userProfile, isDemoMode);
+      
+      const agentMessage: Message = {
+        id: Date.now(),
+        content: response.content,
+        sender: 'agent',
+        timestamp: new Date(),
+        choices: response.choices,
+        responseType: response.responseType
+      };
+      
+      setMessages(prev => [...prev, agentMessage]);
+      if (useTypewriter) {
+        setCurrentTypewriterMessage(agentMessage);
+      }
+      setIsTyping(false);
+      
+      // Update conversation state
+      if (response.final) {
+        setShowRecommendations(true);
+      } else {
+        setConversationStep(prev => prev + 1);
+        
+        // Continue demo mode responses
+        if (isDemoMode && DEMO_MODE_RESPONSES[step + 1]) {
+          const nextResponse = DEMO_MODE_RESPONSES[step + 1];
+          setTimeout(() => {
+            handleDemoResponse(nextResponse.answer, step + 1);
+          }, nextResponse.delay);
+        }
+      }
+      
+      // Update user profile if response contains a tag
+      if (response.tag && response.value) {
+        const tag = response.tag as string;
+        setUserProfile(prev => ({
+          ...prev,
+          [tag]: response.value as string
+        }));
+      }
+      
+      // Store recommendations if provided
+      if (response.recommendations) {
+        setRecommendations(response.recommendations);
+      }
+    }, 1000);
+  };
+
+  const handleSendMessage = () => {
+    if (!input.trim() || isTyping) return;
+
+    if (isDemoMode) {
+      // In demo mode, ignore manual input and use pre-written responses
+      return;
+    }
+
+    // Regular message handling for non-demo mode
+    const userMessage: Message = {
+      id: Date.now(),
+      content: input,
+      sender: 'user',
+      timestamp: new Date(),
+      responseType: 'text'
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsTyping(true);
 
     // Get agent response
     setTimeout(() => {
@@ -140,7 +221,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         content: response.content,
         sender: 'agent',
         timestamp: new Date(),
-        choices: response.choices
+        choices: response.choices,
+        responseType: response.responseType || 'text'
       };
       
       setMessages(prev => [...prev, agentMessage]);
@@ -148,13 +230,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
         setCurrentTypewriterMessage(agentMessage);
       }
       setIsTyping(false);
-      
-      // Track agent response
-      addInteraction('chat_end' as InteractionType, {
-        message: response.content,
-        step: conversationStep,
-        choices: response.choices
-      });
       
       // Update conversation state
       if (response.final) {
@@ -180,6 +255,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
   };
 
   const handleChoiceSelect = (choice: string) => {
+    if (isTyping) return;
     setInput(choice);
     handleSendMessage();
   };
@@ -208,15 +284,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
   };
 
   const renderMessage = (message: Message) => {
-    // If this message is currently being typewritten, render the typewriter component
     if (useTypewriter && currentTypewriterMessage && currentTypewriterMessage.id === message.id) {
       return (
         <ChatMessage
           key={message.id}
-          message={{
-            ...message,
-            content: '' // This will be empty since we're using the typewriter component
-          }}
+          message={message}
           onChoiceSelect={handleChoiceSelect}
           onReaction={handleMessageReaction}
         >
@@ -230,7 +302,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
       );
     }
     
-    // Otherwise render the regular message
     return (
       <ChatMessage 
         key={message.id}
@@ -324,13 +395,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onClose }) => {
                 placeholder="Type your message..."
                 className="flex-1 border border-gray-300 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none max-h-20"
                 rows={1}
-                disabled={isTyping || messages[messages.length - 1]?.choices}
+                disabled={isTyping || (messages[messages.length - 1]?.responseType === 'multiChoice')}
               />
               <button
                 onClick={handleSendMessage}
-                disabled={isTyping || input.trim() === '' || messages[messages.length - 1]?.choices}
+                disabled={isTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')}
                 className={`bg-indigo-600 p-3 rounded-r-lg ${
-                  isTyping || input.trim() === '' || messages[messages.length - 1]?.choices
+                  isTyping || input.trim() === '' || (messages[messages.length - 1]?.responseType === 'multiChoice')
                     ? 'opacity-50 cursor-not-allowed'
                     : 'hover:bg-indigo-700'
                 }`}

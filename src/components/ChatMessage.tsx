@@ -14,10 +14,11 @@ interface Message {
 interface ChatMessageProps {
   message: Message;
   onChoiceSelect: (choice: string) => void;
-  onReaction?: (reaction: 'helpful' | 'not-helpful') => void;
+  onReaction: (reaction: 'helpful' | 'not-helpful') => void;
+  children?: React.ReactNode;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, onChoiceSelect, onReaction }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, onChoiceSelect, onReaction, children }) => {
   const isAgent = message.sender === 'agent';
   const [showTooltip, setShowTooltip] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
@@ -111,9 +112,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onChoiceSelect, onRe
         )}
         
         <div className="relative">
-          <p className={`${isAgent ? 'text-gray-800' : 'text-white'} whitespace-pre-wrap`}>
-            {message.content}
-          </p>
+          {children || (
+            <p className={`${isAgent ? 'text-gray-800' : 'text-white'} whitespace-pre-wrap`}>
+              {message.content}
+            </p>
+          )}
           
           {/* Copy button */}
           {isAgent && (
